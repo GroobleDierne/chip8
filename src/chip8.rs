@@ -1,7 +1,6 @@
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
-use std::convert::TryInto;
 use rand::Rng;
 
 pub struct Cpu {
@@ -10,12 +9,12 @@ pub struct Cpu {
     v: [u8;16],
     i: u16,
     pc: u16,
-    screen: [u8;32*64],
+    pub screen: [u32;32*64],
     delay_timer: u8,
     sound_timer: u8,
     stack: [u16; 16],
     stack_pointer: u16,
-    pub key: u8,
+    pub keys: [bool; 16],
 }
 
 impl Cpu {
@@ -25,7 +24,6 @@ impl Cpu {
             self.memory[i] = self.fontset[i];
             i+=1;
         }
-        self.update_screen();
     }
     pub fn load_rom(&mut self, name: &str) -> io::Result<()> {
         let mut file = File::open(name)?;
@@ -85,12 +83,7 @@ impl Cpu {
             (6, _, _, _) => self.v[x] = kk,
             // ADD Vx, kk
             (7, _, _, _) => {
-                let (res, overflow) = self.v[x].overflowing_add(kk);
-                match overflow {
-                    true => self.v[15] = 1,
-                    false => self.v[15] = 0,
-                }
-                self.v[x] = res;
+                self.v[x] = self.v[x].wrapping_add(kk);
             },
             // LD Vx, Vy
             (8, _, _, 0) => self.v[x] = vy,
@@ -153,9 +146,9 @@ impl Cpu {
                 self.draw(vx as usize, vy as usize, n as u16);
             }
             // SKP Vx
-            (0xE, _, 0xA, 1) => self.pc += if self.key == vx {2}else {0},
+            (0xE, _, 0xA, 1) => self.pc += if self.keys[vx as usize] {2}else {0},
             // SKNP Vx
-            (0xE, _, 0, 7) => self.pc += if self.key != vx {2}else {0},
+            (0xE, _, 0, 7) => self.pc += if !self.keys[vx as usize] {2}else {0},
             // LD Vx, DT
             (0xF, _, 0, 7) => self.v[x] = self.delay_timer,
             // LD DT, Vx
@@ -183,28 +176,13 @@ impl Cpu {
         if self.delay_timer > 0 {self.delay_timer -= 1;}
         if self.sound_timer > 0 {
             self.sound_timer -= 1;
-            print!("\u{0007}");
+            println!("\u{0007}");
         }
         
     }
 
     fn clear_screen(&mut self) {
         self.screen = [0;32*64];
-        self.update_screen();
-    }
-
-    fn update_screen(&mut self) {
-        print!("{esc}c", esc = 27 as char);
-        let mut lines = vec![format!("—————————————————————————————————————————————————————————————————— pc:{}", self.pc)];
-        for i in 0..32 {
-            let line: [u8;64] = self.screen[i*64 .. 64 + i*64].try_into().expect("Bad size!");
-            lines.push(format!("{}{}{}", "|", line.to_vec().into_iter().map(|x| {
-                if x == 0 as u8 { return " " }else { return "\x1B[107m \x1B[49m" }
-            }).collect::<Vec<&str>>().join(""), "|"));
-        }
-        lines.push(format!("—————————————————————————————————————————————————————————————————— V{:?}\n", self.v));
-        print!("{}", lines.join("\n"));
-        if self.sound_timer > 0 {print!("\u{0007}")}
     }
 
     fn draw(&mut self, x: usize, y: usize, height: u16) {
@@ -217,14 +195,15 @@ impl Cpu {
             for i in 0..8 {
                 if line & (0x80 >> i) != 0 {
                     let pixel = ((x + i) % 64) + ((y +j) % 32) * 64;
-                    if self.screen[pixel] == 1 {
+                    if self.screen[pixel] == 0xffffffff {
                         self.v[0xF] = 1;
+                        self.screen[pixel] = 0xff000000; 
+                    }else {
+                        self.screen[pixel] = 0xffffffff; 
                     }
-                    self.screen[pixel] ^= 1; 
                 }
             }
         }
-        self.update_screen();
     }
 }
 pub const fn create_cpu() -> Cpu {
@@ -260,7 +239,7 @@ pub const fn create_cpu() -> Cpu {
         stack: [0;16],
         stack_pointer: 0,
         
-        key: 0xFF,
+        keys: [false; 16],
     };
     return cpu
 }
