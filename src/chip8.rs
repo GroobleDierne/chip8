@@ -202,8 +202,7 @@ impl Cpu {
                 if x == 0 as u8 { return " " }else { return "\x1B[107m \x1B[49m" }
             }).collect::<Vec<&str>>().join(""), "|"));
         }
-        lines.push(format!("—————————————————————————————————————————————————————————————————— V{:?}", self.v));
-        lines.push("fdf".to_owned());
+        lines.push(format!("—————————————————————————————————————————————————————————————————— V{:?}\n", self.v));
         print!("{}", lines.join("\n"));
         if self.sound_timer > 0 {print!("\u{0007}")}
     }
