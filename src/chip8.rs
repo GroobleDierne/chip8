@@ -65,9 +65,9 @@ impl Cpu {
                 self.pc = self.stack[self.stack_pointer as usize];
                 self.stack_pointer -= 1;
             },
-            // JP kkk
+            // JP nnn
             (1, _, _, _) => self.pc = nnn,
-            // CALL kkk
+            // CALL nnn
             (2, _, _, _) => {
                 self.stack_pointer += 1;
                 self.stack[self.stack_pointer as usize] = self.pc;
@@ -146,9 +146,9 @@ impl Cpu {
                 self.draw(vx as usize, vy as usize, n as u16);
             }
             // SKP Vx
-            (0xE, _, 0xA, 1) => self.pc += if self.keys[vx as usize] {2}else {0},
+            (0xE, _, 9, 0xE) => self.pc += if self.keys[vx as usize] {2}else {0},
             // SKNP Vx
-            (0xE, _, 0, 7) => self.pc += if !self.keys[vx as usize] {2}else {0},
+            (0xE, _, 0xA, 1) => self.pc += if !self.keys[vx as usize] {2}else {0},
             // LD Vx, DT
             (0xF, _, 0, 7) => self.v[x] = self.delay_timer,
             // LD DT, Vx
