@@ -1,6 +1,6 @@
 # Chip-8 emulator
 
-A chip-8 emulator in the terminal written in Rust for Windows, may not work on other platforms.
+A chip-8 emulator written in Rust for Windows, may not work on other platforms.
 
 The keyboard part is not implemented yet.
 
