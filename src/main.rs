@@ -1,4 +1,5 @@
 mod chip8;
+mod decompiler;
 use std::time::Duration;
 use std::env;
 extern crate minifb;
@@ -13,6 +14,10 @@ fn main() {
 
     let rom = if args.len() > 1 {args[1].as_str()}else {"pong.rom"};
 
+    if args.len() > 2 && args[2] == "--decompile" {
+        decompiler::decompile(rom);
+        return;
+    }
     let mut cpu = chip8::create_cpu();
     cpu.initialize();
     cpu.load_rom(rom).expect("Unable to load ROM");
