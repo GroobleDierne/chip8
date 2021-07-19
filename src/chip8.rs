@@ -5,8 +5,8 @@ use rand::Rng;
 
 pub struct Cpu {
     fontset: [u8;80],
-    pub memory: [u8;4096],
-    v: [u8;16],
+    memory: [u8;4096],
+    pub v: [u8;16],
     i: u16,
     pc: u16,
     pub screen: [u32;32*64],
@@ -15,6 +15,8 @@ pub struct Cpu {
     stack: [u16; 16],
     stack_pointer: u16,
     pub keys: [bool; 16],
+    pub is_wating: bool,
+    pub key_register: usize,
 }
 
 impl Cpu {
@@ -39,7 +41,7 @@ impl Cpu {
     }
     pub fn do_cycle(&mut self) {
         let opcode: u16 = (self.memory[self.pc as usize] as u16) << 8 | self.memory[(self.pc+1) as usize] as u16;
-        //println!("opcode : {}", format!("{:X}", opcode));
+
         // Break up into nibbles to identify opcodes
         let op_1 = (opcode & 0xF000) >> 12;
         let op_2 = (opcode & 0x0F00) >> 8;
@@ -151,6 +153,11 @@ impl Cpu {
             (0xE, _, 0xA, 1) => self.pc += if !self.keys[vx as usize] {2}else {0},
             // LD Vx, DT
             (0xF, _, 0, 7) => self.v[x] = self.delay_timer,
+            // LD Vx, K
+            (0xF, _, 0, 0xA) => {
+                self.is_wating = true;
+                self.key_register = x;
+            },
             // LD DT, Vx
             (0xF, _, 1, 5) => self.delay_timer = vx,
             // LD ST, Vx
@@ -240,6 +247,8 @@ pub const fn create_cpu() -> Cpu {
         stack_pointer: 0,
         
         keys: [false; 16],
+        is_wating: false,
+        key_register: 0,
     };
     return cpu
 }

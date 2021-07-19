@@ -65,6 +65,15 @@ fn main() {
             }
         });
 
+        if cpu.is_wating {
+            for i in 0..16 {
+                if cpu.keys[i] {
+                    cpu.is_wating = false;
+                    cpu.v[cpu.key_register] = i as u8;
+                }else {break;}
+            }
+        }
+
         cpu.do_cycle();
         
         window
